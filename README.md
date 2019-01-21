@@ -1,4 +1,4 @@
-# Reversible simulation and reverse exploration of traffic models
+# Reversible Simulation and Reverse Exploration of Microscopic Traffic Models
 
 ## Dependencies:
 * libfixmath: https://code.google.com/archive/p/libfixmath/
