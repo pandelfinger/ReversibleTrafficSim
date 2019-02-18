@@ -171,7 +171,7 @@ void write_tables(fix16_t sensing_range, fix16_t v_step, fix16_t p_step, double 
   fclose(stream);
 }
 
-void create_tables(fix16_t sensing_range, fix16_t v_step, fix16_t p_step, double dt_dbl)
+void create_tables(fix16_t sensing_range, fix16_t v_step, fix16_t p_step, double dt_dbl, bool dump_input_transitions)
 {
   m_p_step = p_step;
   m_v_step = v_step;
@@ -190,7 +190,9 @@ void create_tables(fix16_t sensing_range, fix16_t v_step, fix16_t p_step, double
 
   unordered_map<Bw_key, vector<Fw_key>> bw_table_ambig;
 
-  if(read_tables(sensing_range, v_step, p_step, dt_dbl, bw_table_ambig)) {
+  map<fix16_t, uint64_t> num_fw_keys_same_new_v;
+
+  if(!dump_input_transitions && read_tables(sensing_range, v_step, p_step, dt_dbl, bw_table_ambig)) {
     return;
   }
 
@@ -267,6 +269,10 @@ void create_tables(fix16_t sensing_range, fix16_t v_step, fix16_t p_step, double
     auto in_set = it->second;
     num_fw_keys[bw_key] = in_set.size();
 
+    if(dump_input_transitions) {
+      num_fw_keys_same_new_v[bw_key.new_v] += in_set.size();
+    }
+
     uint32_t index = 0;
     for(auto sit = in_set.begin(); sit != in_set.end(); sit++) {
       Fw_key fw_key = *sit;
@@ -281,6 +287,10 @@ void create_tables(fix16_t sensing_range, fix16_t v_step, fix16_t p_step, double
     }
 
     vector<Fw_key>().swap(it->second);
+  }
+
+  for(auto it = num_fw_keys_same_new_v.begin(); it != num_fw_keys_same_new_v.end(); it++) {
+    cerr << "input transitions: " << it->first << ", " << it->second << endl;
   }
 
   write_tables(sensing_range, v_step, p_step, dt_dbl, bw_table_ambig);

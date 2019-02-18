@@ -20,7 +20,7 @@ const int num_lanes = 3;
 const int epoch_bits = 2;
 const int epoch_length = ipow(2, epoch_bits);
 
-static const bool debug = true;
+static const bool debug = false;
 
 bool simulate_forward(vector<vector<Agent>> &state, fix16_t sensing_range, int steps, int &final_step, string out_filename = "")
 {
@@ -589,7 +589,12 @@ int main(int argc, char **argv)
   int num_obstacles = atoi(argv[9]);
   int max_ts = atoi(argv[10]);
 
-  create_tables(sensing_range, v_step, p_step, dt_dbl);
+  bool dump_input_transitions = atoi(argv[11]);
+
+  create_tables(sensing_range, v_step, p_step, dt_dbl, dump_input_transitions);
+
+  if(dump_input_transitions)
+    exit(1);
 
   int successes = 0;
 
@@ -612,6 +617,9 @@ int main(int argc, char **argv)
     seed++;
 
   } while(successes < num_runs);
+
+  if(debug)
+    cerr << "returning " << seed - 1 << endl;
 
   return seed - 1;
 }
