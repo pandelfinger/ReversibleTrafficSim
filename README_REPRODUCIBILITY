@@ -1,5 +1,19 @@
 "From Effects to Causes: Reversible Simulation and Reverse Exploration of Microscopic Traffic Models"
 
+Artifacts
+---------
+
+This archive includes the code used to generate the results presented in the paper.
+The code is provided under the GPLv2 license.
+
+We make the code permanently available through Zenodo, which declares accessibility throughout the lifetime of CERN: http://about.zenodo.org/policies/
+The DOI of the code is (TODO: specify)
+
+Reusability
+-----------
+
+The main reversible simulation and reverse exploration code is independent of the car-following and lane-changing model used. By modifying the model specifications in cf.cpp and lc.cpp, the approach can easily be applied to arbitrary parametrizations and other models. Furthermore, since we provide the code that defines the example scenarios used to generate the plots, users can easily change the scenarios to perform their own reachability studies.
+
 Instructions for replicating results
 ------------------------------------
 
