@@ -27,10 +27,12 @@ From root of source folder: 'make' (with the -jN flag for N-way parallel compila
 Run all experiments (takes multiple hours): './scripts/run_all_eval.sh'
 
 Run specific experiment:
-  - Figure 5: './scripts/garbage_bits/run_gb_evaluation.sh' 
+  - Figure 5: './scripts/epoch_length/run_epoch_length_eval.sh' 
+  - Figure 5: './scripts/garbage_bits/run_gb_eval.sh' 
   - Figure 6: './scripts/velocity_ins/run_velocity_ins_eval.sh'
   - Figure 7: './scripts/running_time/run_running_time_eval.pl'
   - Figure 8 and 9: './scripts/exploration/run_exploration_eval.sh'
   - Figure 11: './scripts/case_study/run_case_study_eval.sh'
+  - Table 3: './scripts/table_size/run_table_size_eval.pl' (note that there is a typo in the results that will be fixed for the camera-ready version: "#Forward keys" for granularity 0.25 should be 1,062,882 instead of 1,062,982)
 
 The resulting plots can be found as .eps files in the root of the source folder.

@@ -196,12 +196,12 @@ void create_tables(fix16_t sensing_range, fix16_t v_step, fix16_t p_step, double
     return;
   }
 
-  const int num_combinations = m_dim_x * m_dim_y * m_dim_z;
+  const uint64_t num_combinations = m_dim_x * m_dim_y * m_dim_z;
   int curr_combination = 0;
 
   cerr << "creating initial tables" << endl;
   cerr << "num_combinations: " << num_combinations << endl;
-  cerr << "disregarding overhead, the size of the initial backward table is " << (num_combinations * (20 + 20 + 16)) / 1024 / 1024 << "MiB" << endl;
+  cerr << "disregarding overhead, the size of the tables is " << (num_combinations * (20 + 20 + 16)) << " bytes" << endl;
 
   for(fix16_t v_in = fix16_from_int(0); v_in <= fix16_from_int(20); v_in = v_in += v_step) {
     for(fix16_t v_ahead_in = fix16_from_int(0); v_ahead_in <= fix16_from_int(20); v_ahead_in += v_step) {
@@ -228,15 +228,19 @@ void create_tables(fix16_t sensing_range, fix16_t v_step, fix16_t p_step, double
 
         double p_change_out_dbl = v_out_dbl * dt_dbl;
   
-        fix16_t v_out = max(fix16_from_dbl(v_out_dbl), 0);
+        // FIXME: in the paper, we include negative velocities in the table.
+        //        the final version will exclude them.
+        fix16_t v_out = fix16_from_dbl(v_out_dbl);
+        // fix16_t v_out = max(fix16_from_dbl(v_out_dbl), 0);
 
         if(v_out % v_step != 0)
           v_out = v_out + v_step - v_out % v_step;
 
-        if(v_out < 0) {
-          cerr << "BUG! v_out < 0" << endl;
-          exit(1);
-        }
+        // FIXME: see above
+        //if(v_out < 0) {
+        //  cerr << "BUG! v_out < 0" << endl;
+        //  exit(1);
+        //}
 
         fix16_t p_change_out = fix16_from_dbl(p_change_out_dbl);
 

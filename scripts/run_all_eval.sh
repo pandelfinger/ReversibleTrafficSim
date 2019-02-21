@@ -18,4 +18,7 @@ echo executing reverse exploration experiment
 echo executing case study experiment
 ./scripts/case_study/run_case_study_eval.sh
 
+echo executing table size experiment
+./scripts/table_size/table_size_eval.pl
+
 ls *.eps
