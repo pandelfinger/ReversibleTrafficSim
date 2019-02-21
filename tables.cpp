@@ -201,8 +201,7 @@ void create_tables(fix16_t sensing_range, fix16_t v_step, fix16_t p_step, double
 
   cerr << "creating initial tables" << endl;
   cerr << "num_combinations: " << num_combinations << endl;
-  cerr << "disregarding overhead, the size of the initial backward table should be around " << (num_combinations * (sizeof(Fw_key) + sizeof(Bw_key))) / 1024 / 1024 << "MiB" << endl;
-  cerr << "size of a vector of Fw_key: " << sizeof(vector<Fw_key>) << endl;
+  cerr << "disregarding overhead, the size of the initial backward table is " << (num_combinations * (20 + 20 + 16)) / 1024 / 1024 << "MiB" << endl;
 
   for(fix16_t v_in = fix16_from_int(0); v_in <= fix16_from_int(20); v_in = v_in += v_step) {
     for(fix16_t v_ahead_in = fix16_from_int(0); v_ahead_in <= fix16_from_int(20); v_ahead_in += v_step) {
@@ -262,6 +261,9 @@ void create_tables(fix16_t sensing_range, fix16_t v_step, fix16_t p_step, double
 
   if(debug)
     cerr << "creating final tables" << endl;
+
+  if(dump_input_transitions)
+    cerr << "unique backward keys: " << bw_table_ambig.size() << endl;
 
   for(auto it = bw_table_ambig.begin(); it != bw_table_ambig.end(); it++) {
     Bw_key bw_key = it->first;

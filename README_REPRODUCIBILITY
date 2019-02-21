@@ -3,6 +3,13 @@
 Instructions for replicating results
 ------------------------------------
 
+--- System requirements ---
+
+The original experiments were carried out on Ubuntu 16.04.5 LTS.
+Other recent Linux distributions are likely to work, but have not been tested.
+
+To avoid swapping, the system should be equipped with >= 16 GiB RAM.
+
 --- Install libfixmath ---
 
   cd libfixmath/libfixmath
@@ -13,11 +20,11 @@ Instructions for replicating results
 
 --- Compile ---
 
-From root of source folder: 'make'
+From root of source folder: 'make' (with the -jN flag for N-way parallel compilation)
 
 --- Run experiments ---
 
-Run all experiments: './scripts/run_all_eval.sh'
+Run all experiments (takes multiple hours): './scripts/run_all_eval.sh'
 
 Run specific experiment:
   - Figure 5: './scripts/garbage_bits/run_gb_evaluation.sh' 
