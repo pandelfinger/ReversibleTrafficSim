@@ -7,7 +7,7 @@
 
 int rev_explore_solutions = 0;
 
-static const bool debug = true;
+static const bool debug = false;
 
 void choose(int num_vehicles, int num_lcs, vector<pair<uint8_t, int8_t>> &v, int start_pos, vector<vector<pair<uint8_t, int8_t>>> &lc_decisions)
 {
@@ -252,7 +252,7 @@ bool get_prev_state_lc(vector<Agent> &prev_state_cf, vector<vector<Agent>> &prev
 
 }
 
-void reverse_explore(vector<Agent> state, int ts, int target_ts, fix16_t sensing_range, int num_lanes, int num_obstacles, int max_ts, bool lc_only)
+void reverse_explore(vector<Agent> state, int ts, int target_ts, fix16_t sensing_range, int num_lanes, int num_obstacles, int max_ts, bool lc_only, bool dump_states)
 {
 
   const bool detailed_statistics = true;
@@ -281,7 +281,7 @@ void reverse_explore(vector<Agent> state, int ts, int target_ts, fix16_t sensing
   static time_t start_secs = time(NULL);
 
   if(ts == target_ts) {
-    if(debug)
+    if(dump_states)
       dump_state(state, "starting state");
 
     rev_explore_solutions++;
@@ -437,7 +437,7 @@ void reverse_explore(vector<Agent> state, int ts, int target_ts, fix16_t sensing
           }
         }
 
-        reverse_explore(prev_state_lc, ts - 1, target_ts, sensing_range, num_lanes, num_obstacles, max_ts, false);
+        reverse_explore(prev_state_lc, ts - 1, target_ts, sensing_range, num_lanes, num_obstacles, max_ts, false, dump_states);
       }
      
       lc_decisions.clear();
@@ -478,9 +478,9 @@ void reverse_explore(vector<Agent> state, int ts, int target_ts, fix16_t sensing
 
 }
 
-void reverse_explore(vector<vector<Agent>> state, int ts, int target_ts, fix16_t sensing_range, int num_lanes, int num_obstacles, int max_ts, bool lc_only)
+void reverse_explore(vector<vector<Agent>> state, int ts, int target_ts, fix16_t sensing_range, int num_lanes, int num_obstacles, int max_ts, bool lc_only, bool dump_states)
 {
   vector<Agent> linear_state;
   flatten_state(state, linear_state);
-  reverse_explore(linear_state, ts, target_ts, sensing_range, num_lanes, num_obstacles, max_ts, lc_only);
+  reverse_explore(linear_state, ts, target_ts, sensing_range, num_lanes, num_obstacles, max_ts, lc_only, dump_states);
 }

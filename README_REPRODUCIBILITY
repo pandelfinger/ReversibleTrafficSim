@@ -1,0 +1,29 @@
+"From Effects to Causes: Reversible Simulation and Reverse Exploration of Microscopic Traffic Models"
+
+Instructions for replicating results
+------------------------------------
+
+--- Install libfixmath ---
+
+  cd libfixmath/libfixmath
+  make
+  sudo mkdir /usr/local/include/fixmath
+  sudo cp *.h /usr/local/include/fixmath
+  sudo cp *.a /usr/local/lib
+
+--- Compile ---
+
+From root of source folder: 'make'
+
+--- Run experiments ---
+
+Run all experiments: './scripts/run_all_eval.sh'
+
+Run specific experiment:
+  - Figure 5: './scripts/garbage_bits/run_gb_evaluation.sh' 
+  - Figure 6: './scripts/velocity_ins/run_velocity_ins_eval.sh'
+  - Figure 7: './scripts/running_time/run_running_time_eval.pl'
+  - Figure 8 and 9: './scripts/exploration/run_exploration_eval.sh'
+  - Figure 11: './scripts/case_study/run_case_study_eval.sh'
+
+The resulting plots can be found as .eps files in the root of the source folder.

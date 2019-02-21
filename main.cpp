@@ -394,6 +394,7 @@ bool run_reversible_sim_evaluation(fix16_t sensing_range, fix16_t p_step, fix16_
     a.id = 0;
     a.v = 0;
     uint32_t factor_p = rand() % (fix16_from_int(40) / p_step + 1) + fix16_from_int(10) / p_step;
+
     a.p += p_step * factor_p;
     a.lane = rand() % num_lanes;
 
@@ -476,6 +477,104 @@ bool run_reversible_sim_evaluation(fix16_t sensing_range, fix16_t p_step, fix16_
   return true;
 }
 
+bool run_case_study(fix16_t sensing_range, fix16_t p_step, fix16_t v_step, int num_mobile_vehicles, int num_obstacles, int max_ts)
+{
+  static const fix16_t veh_length = fix16_from_str("4.5");
+  vector<vector<Agent>> state(num_lanes);
+
+  int num_vehicles = num_mobile_vehicles + num_lanes + num_obstacles;
+
+  int factor_v[2];
+
+  int max_overlap_factor = veh_length / p_step + 1;
+  int max_obst_dist_factor = fix16_from_int(50) / p_step + 1;
+  int max_factor_v = fix16_from_int(20) / v_step + 1;
+
+  int rough_total = max_obst_dist_factor * max_obst_dist_factor * max_factor_v;
+
+  int old_rev_explore_solutions = 0;
+
+  int iter = 0;
+
+  for(int overlap_factor = max_overlap_factor - 1; overlap_factor >= 0; overlap_factor--) {
+    for(int obst_dist_factor = 0; obst_dist_factor < max_obst_dist_factor; obst_dist_factor++) {
+      for(factor_v[0] = 0; factor_v[0] < max_factor_v; factor_v[0]++) {
+        for(factor_v[1] = 0; factor_v[1] < max_factor_v; factor_v[1]++) {
+          iter++;
+
+          if(iter % 100000 == 0)
+            cerr << "roughly " << 100 * iter / rough_total << " percent done, " << iter << " out of " << rough_total << endl;
+
+          Agent a;
+          for(int lidx = 0; lidx < num_lanes; lidx++) {
+            state[lidx].clear();
+            a.id = 0;
+            a.v = fix16_from_int(0);
+            a.p = fix16_from_int(10000);
+            a.lane = lidx;
+            state[lidx].push_back(a);
+          }
+
+          a.id = 0;
+          a.v = 0;
+          a.p = fix16_from_int(150);
+          a.lane = 0;
+
+          state[a.lane].push_back(a);
+
+          a.id = 0;
+          a.v = 0;
+          a.p = fix16_from_int(150);
+          a.lane = 2;
+
+          state[a.lane].push_back(a);
+
+          int next_id = 1;
+          for(int i = 0; i < num_mobile_vehicles; i++) {
+            a.id = next_id++;
+
+            a.v = v_step * factor_v[i];
+            if(i == 0)
+              a.p = fix16_from_int(150) - veh_length - obst_dist_factor * p_step;
+            else
+              a.p = fix16_from_int(150) - veh_length - obst_dist_factor * p_step - overlap_factor * p_step;
+
+            a.init_garbage_bits();
+
+            a.lane = 1;
+
+            state[a.lane].push_back(a);
+          }
+
+          for(int lidx = 0; lidx < num_lanes; lidx++) {
+            sort(state[lidx].begin(), state[lidx].end());
+            reverse(state[lidx].begin(), state[lidx].end());
+          }
+
+          int final_ts = max_ts;
+
+          reverse_explore(state, final_ts, 0, sensing_range, num_lanes, num_obstacles, final_ts, true, true);
+
+          if(rev_explore_solutions != old_rev_explore_solutions) {
+            old_rev_explore_solutions = rev_explore_solutions;
+            dump_state(state, "final state");
+          }
+
+          for(int lidx = 0; lidx < state.size(); lidx++) {
+            for(int aidx = 0; aidx < state[lidx].size(); aidx++) {
+              Agent &a = state[lidx][aidx];
+              if(a.id)
+                a.delete_garbage_bits();
+            }
+          }
+
+        }
+      }
+    }
+  }
+  return true;
+}
+
 bool run_rev_exploration_evaluation(fix16_t sensing_range, fix16_t p_step, fix16_t v_step, int num_mobile_vehicles, int num_obstacles, int max_ts)
 {
   static const fix16_t veh_length = fix16_from_str("4.5");
@@ -493,12 +592,12 @@ bool run_rev_exploration_evaluation(fix16_t sensing_range, fix16_t p_step, fix16
     state[lidx].push_back(a);
   }
 
-  
   a.p = 0;
   for(int i = 0; i < num_obstacles; i++) {
     a.id = 0;
     a.v = 0;
     uint32_t factor_p = rand() % (fix16_from_int(40) / p_step + 1) + fix16_from_int(10) / p_step;
+
     a.p += p_step * factor_p;
     a.lane = rand() % num_lanes;
 
@@ -510,9 +609,10 @@ bool run_rev_exploration_evaluation(fix16_t sensing_range, fix16_t p_step, fix16
     a.id = next_id++;
 
     uint32_t factor_v = rand() % (fix16_from_int(20) / v_step + 1);
+    cerr << factor_v << endl;
     a.v = v_step * factor_v;
 
-    uint32_t factor_p = rand() % (fix16_from_int(250) / p_step + 1);
+    uint32_t factor_p = rand() % (fix16_from_int(100) / p_step + 1);
     a.p = p_step * factor_p;
 
     a.lane = rand() % num_lanes;
@@ -559,7 +659,7 @@ bool run_rev_exploration_evaluation(fix16_t sensing_range, fix16_t p_step, fix16
     return false;
   }
 
-  reverse_explore(state, final_ts, 0, sensing_range, num_lanes, num_obstacles, final_ts, false);
+  reverse_explore(state, final_ts, 0, sensing_range, num_lanes, num_obstacles, final_ts, false, false);
 
   for(int lidx = 0; lidx < state.size(); lidx++) {
     for(int aidx = 0; aidx < state[lidx].size(); aidx++) {
@@ -574,7 +674,7 @@ bool run_rev_exploration_evaluation(fix16_t sensing_range, fix16_t p_step, fix16
 
 int main(int argc, char **argv)
 {
-  bool mode = atoi(argv[1]);
+  int mode = atoi(argv[1]);
   int num_runs = atoi(argv[2]);
   int seed = atoi(argv[3]);
 
@@ -589,11 +689,9 @@ int main(int argc, char **argv)
   int num_obstacles = atoi(argv[9]);
   int max_ts = atoi(argv[10]);
 
-  bool dump_input_transitions = atoi(argv[11]);
+  create_tables(sensing_range, v_step, p_step, dt_dbl, mode == 2);
 
-  create_tables(sensing_range, v_step, p_step, dt_dbl, dump_input_transitions);
-
-  if(dump_input_transitions)
+  if(mode == 2)
     exit(1);
 
   int successes = 0;
@@ -608,8 +706,10 @@ int main(int argc, char **argv)
 
     if(!mode)
       r = run_reversible_sim_evaluation(sensing_range, v_step, p_step, num_mobile_vehicles, num_obstacles, max_ts);
-    else
+    else if(mode == 1)
       r = run_rev_exploration_evaluation(sensing_range, v_step, p_step, num_mobile_vehicles, num_obstacles, max_ts);
+    else if(mode == 3)
+      r = run_case_study(sensing_range, v_step, p_step, num_mobile_vehicles, num_obstacles, max_ts);
 
     if(r)
       successes++;

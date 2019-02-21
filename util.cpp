@@ -37,8 +37,8 @@ void dump_state(vector<vector<Agent>> &state, const char *str)
   cerr << endl << str << endl;
   for(int lidx = 0; lidx < state.size(); lidx++) {
     for(int aidx = 0; aidx < state[lidx].size(); aidx++) {
-      if(!state[lidx][aidx].id)
-        continue;
+      //if(!state[lidx][aidx].id)
+      //  continue;
       cerr << state[lidx][aidx].lane << ", " << state[lidx][aidx].id << ", " << state[lidx][aidx].v << ", " << state[lidx][aidx].p << endl;
     }
   }
@@ -48,8 +48,8 @@ void dump_state(vector<Agent> &state, const char *str)
 {
   cerr << endl << str << endl;
   for(int aidx = 0; aidx < state.size(); aidx++) {
-    if(!state[aidx].id)
-      continue;
+    //if(!state[aidx].id)
+    //  continue;
 
     cerr << state[aidx].lane << ", " << state[aidx].id << ", " << state[aidx].v << ", " << state[aidx].p << endl;
   }
