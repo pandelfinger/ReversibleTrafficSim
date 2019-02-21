@@ -6,8 +6,8 @@ echo executing epoch length experiment
 echo executing garbage bits experiment
 ./scripts/garbage_bits/run_gb_eval.sh
 
-echo executing executing time experiment
-./scripts/running_time/run_executing_time_eval.pl
+echo executing running time experiment
+./scripts/running_time/run_running_time_eval.pl
 
 echo executing input transition experiment
 ./scripts/velocity_ins/run_velocity_ins_eval.sh
