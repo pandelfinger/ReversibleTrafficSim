@@ -1,7 +1,10 @@
 #!/bin/bash
 
+echo executing epoch length experiment
+./scripts/garbage_bits/run_epoch_length_eval.sh
+
 echo executing garbage bits experiment
-./scripts/garbage_bits/run_gb_evaluation.sh
+./scripts/garbage_bits/run_gb_eval.sh
 
 echo executing executing time experiment
 ./scripts/executing_time/run_executing_time_eval.pl
