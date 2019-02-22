@@ -23,4 +23,4 @@ echo executing case study experiment
 echo executing table size experiment
 ./scripts/table_size/run_table_size_eval.pl
 
-ls *.eps
+ls -lh *.eps
