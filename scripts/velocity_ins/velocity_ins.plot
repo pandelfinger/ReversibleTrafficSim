@@ -12,6 +12,7 @@ set key bottom left
 set grid
 set log y
 
+set xrange [0:20]
 set yrange [1:1e6]
 
 plot "velocity_ins_4096.csv" using ($1 / 65536):2 with lines lw 3 title "Granularity: 0.25",\
