@@ -1,6 +1,6 @@
 #!/bin/bash
 
-exit 1
+make -j4
 
 echo executing epoch length experiment
 ./scripts/epoch_length/run_epoch_length_eval.sh
