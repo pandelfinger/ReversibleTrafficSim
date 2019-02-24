@@ -31,6 +31,7 @@ To avoid swapping, the system should be equipped with >= 16 GiB RAM.
   sudo mkdir /usr/local/include/fixmath
   sudo cp *.h /usr/local/include/fixmath
   sudo cp *.a /usr/local/lib
+  sudo ldconfig
 
 --- Compile ---
 
