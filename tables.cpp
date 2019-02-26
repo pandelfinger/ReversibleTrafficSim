@@ -125,7 +125,7 @@ void write_tables(fix16_t sensing_range, fix16_t v_step, fix16_t p_step, double 
   size_t buf[] = { m_dim_x * m_dim_y * m_dim_z, bw_table_ambig.size(), p_change.size() };
   fwrite(&buf, sizeof(size_t), sizeof(buf) / sizeof(size_t), stream);
   
-  for(fix16_t v_in = fix16_from_int(0); v_in <= fix16_from_int(20); v_in = v_in += v_step) {
+  for(fix16_t v_in = fix16_from_int(0); v_in <= fix16_from_int(20); v_in += v_step) {
     for(fix16_t v_ahead_in = fix16_from_int(0); v_ahead_in <= fix16_from_int(20); v_ahead_in += v_step) {
       for(fix16_t p_delta_in_ = fix16_from_int(0); p_delta_in_ <= sensing_range + p_step; p_delta_in_ += p_step) {
         fix16_t p_delta_in;
