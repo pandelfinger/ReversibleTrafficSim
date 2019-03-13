@@ -26,6 +26,7 @@ To avoid swapping, the system should be equipped with >= 16 GiB RAM.
 
 --- Install libfixmath ---
 
+  git clone https://github.com/PetteriAimonen/libfixmath.git
   cd libfixmath/libfixmath
   make
   sudo mkdir /usr/local/include/fixmath
