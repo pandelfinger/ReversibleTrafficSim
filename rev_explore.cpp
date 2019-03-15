@@ -6,6 +6,7 @@
 #include "cf.hpp" // for ipow
 
 int rev_explore_solutions = 0;
+uint64_t num_outer_states_lc = 0;
 
 static const bool debug = false;
 
@@ -263,7 +264,6 @@ void reverse_explore(vector<Agent> state, int ts, int target_ts, fix16_t sensing
 
   const int num_mobile_vehicles = num_vehicles - num_lanes - num_obstacles;
 
-  static uint64_t num_outer_states_lc = 0;
   static uint64_t num_outer_states_cf = 0;
 
   static int old_rev_explore_solutions = 0;

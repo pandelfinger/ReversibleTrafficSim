@@ -22,7 +22,11 @@ const int epoch_length = ipow(2, epoch_bits);
 
 static const bool debug = false;
 
-bool simulate_forward(vector<vector<Agent>> &state, fix16_t sensing_range, int steps, int &final_step, string out_filename = "")
+extern uint64_t num_outer_states_lc;
+
+uint64_t num_states_explored_fw = 0;
+
+bool simulate_forward(vector<vector<Agent>> &state, fix16_t sensing_range, int steps, int &final_step, string out_filename = "", bool (*pruning_function)(vector<vector<Agent>> &state, fix16_t sensing_range) = NULL)
 {
   static const fix16_t veh_length = fix16_from_str("4.5");
   const fix16_t v_max = fix16_from_int(20);
@@ -34,6 +38,9 @@ bool simulate_forward(vector<vector<Agent>> &state, fix16_t sensing_range, int s
 
   int ts = final_step = 0;
   for(; ts < steps; ts++, final_step++) {
+
+    if(ts)
+      num_states_explored_fw++;
 
     if(out_filename.compare("") || print_states) {
       for(int lidx = 0; lidx < state.size(); lidx++) {
@@ -53,7 +60,8 @@ bool simulate_forward(vector<vector<Agent>> &state, fix16_t sensing_range, int s
           if(!a.id)
             continue;
           
-          a.garbage_bits_lc->write(1, 0);
+          if(a.garbage_bits_lc)
+            a.garbage_bits_lc->write(1, 0);
         }
       }
     }
@@ -184,6 +192,13 @@ bool simulate_forward(vector<vector<Agent>> &state, fix16_t sensing_range, int s
         }
       }
     }
+
+    if(pruning_function) {
+      bool r = pruning_function(state, sensing_range);
+      if(!r)
+        return true;
+    }
+
 
     state = new_state;
   }
@@ -490,11 +505,11 @@ bool run_case_study(fix16_t sensing_range, fix16_t p_step, fix16_t v_step, int n
   int max_obst_dist_factor = fix16_from_int(50) / p_step + 1;
   int max_factor_v = fix16_from_int(20) / v_step + 1;
 
-  int rough_total = max_obst_dist_factor * max_obst_dist_factor * max_factor_v;
+  int num_combinations = max_overlap_factor * max_obst_dist_factor * max_factor_v * max_factor_v;
 
   int old_rev_explore_solutions = 0;
 
-  int iter = 0;
+  uint64_t iter = 0;
 
   for(int overlap_factor = max_overlap_factor - 1; overlap_factor >= 0; overlap_factor--) {
     for(int obst_dist_factor = 0; obst_dist_factor < max_obst_dist_factor; obst_dist_factor++) {
@@ -503,7 +518,7 @@ bool run_case_study(fix16_t sensing_range, fix16_t p_step, fix16_t v_step, int n
           iter++;
 
           if(iter % 100000 == 0)
-            cerr << "roughly " << 100 * iter / rough_total << " percent done, " << iter << " out of " << rough_total << endl;
+            cerr << (uint64_t)100 * iter / num_combinations << " percent done, " << iter << " out of " << num_combinations << endl;
 
           Agent a;
           for(int lidx = 0; lidx < num_lanes; lidx++) {
@@ -572,8 +587,178 @@ bool run_case_study(fix16_t sensing_range, fix16_t p_step, fix16_t v_step, int n
       }
     }
   }
+
+  cerr << "parameter combinations: " << num_combinations << endl;
+  cerr << "states explored: " << num_outer_states_lc << endl;
   return true;
 }
+
+bool prune_for_case_study(vector<vector<Agent>> &state, fix16_t sensing_range)
+{
+  static const fix16_t veh_length = fix16_from_str("4.5");
+  Agent veh_ahead, veh_behind;
+  veh_ahead.p = -1;
+
+  for(int lidx = 0; lidx < num_lanes; lidx++) {
+    for(int aidx = 0; aidx < state[lidx].size(); aidx++) {
+      Agent &a = state[lidx][aidx];
+
+      if(!a.id)
+        continue;
+
+      if(veh_ahead.p == -1) {
+        veh_ahead = a;
+      } else if(veh_ahead.p < a.p) {
+        veh_behind = veh_ahead;
+        veh_ahead = a;
+      } else {
+        veh_behind = a;
+      }
+    }
+  }
+
+  // prune when:
+  //  - front vehicle is outside sensing range of the other vehicle, and at least as fast
+  //  - accident occurs and time step < 10
+  //  - any vehicle passed the obstacle
+  if(veh_ahead.p - veh_behind.p > sensing_range && veh_ahead.v - veh_behind.v >= 0)
+    return false;
+
+  if(veh_ahead.lane == veh_behind.lane && abs(veh_ahead.p - veh_behind.p) < veh_length)
+    return false;
+
+  if(veh_ahead.p + veh_length > fix16_from_int(150) || veh_behind.p + veh_length > fix16_from_int(150))
+    return false;
+
+  return true;
+}
+
+bool run_case_study_forward(fix16_t sensing_range, fix16_t p_step, fix16_t v_step, int num_mobile_vehicles, int num_obstacles, int max_ts)
+{
+  static const fix16_t veh_length = fix16_from_str("4.5");
+  int max_obst_dist_factor = fix16_from_int(70) / p_step + 1;
+  int max_factor_v = fix16_from_int(20) / v_step + 1;
+
+  uint64_t num_combinations = (uint64_t)max_obst_dist_factor * max_obst_dist_factor * max_factor_v * max_factor_v * 2 * 2;
+
+  cerr << "num_combinations: " << num_combinations << endl;
+
+  vector<vector<Agent>> initial_state;
+  vector<vector<Agent>> state(num_lanes);
+
+  int factor_v[2];
+  int lidx[2];
+  int obst_dist_factor[2];
+  uint64_t iter = 0;
+  uint64_t num_accidents = 0;
+  uint64_t num_iterations_skipped = 0;
+
+  time_t start = time(NULL);
+
+  for(obst_dist_factor[0] = 0; obst_dist_factor[0] < max_obst_dist_factor; obst_dist_factor[0]++) {
+    for(obst_dist_factor[1] = 0; obst_dist_factor[1] < max_obst_dist_factor; obst_dist_factor[1]++) {
+      for(factor_v[0] = 0; factor_v[0] < max_factor_v; factor_v[0]++) {
+        for(factor_v[1] = 0; factor_v[1] < max_factor_v; factor_v[1]++) {
+          for(lidx[0] = 0; lidx[0] <= 1; lidx[0]++) {
+            for(lidx[1] = 1; lidx[1] <= 2; lidx[1]++) {
+              iter++;
+ 
+              if(iter % 10000000 == 0) {
+                time_t now = time(NULL);
+                uint64_t iter_per_sec = iter / (now - start);
+                uint64_t states_per_sec = num_states_explored_fw / (now - start);
+                uint64_t sec_to_go = (double)(num_combinations - iter) / iter_per_sec;
+ 
+                cerr << 100 * iter / num_combinations << " percent done, " << iter << " out of " << num_combinations << ", num_accidents: " << num_accidents << ", " << iter_per_sec << " iterations per sec, about " << sec_to_go << " sec to go" << endl;
+                cerr << "explored " << num_states_explored_fw << " states, " << states_per_sec << " states per sec" << endl;
+              }
+ 
+              if(obst_dist_factor[0] > obst_dist_factor[1]) { // exploit symmetry
+                num_iterations_skipped++;
+                continue;
+              }
+ 
+              Agent a;
+              for(int lidx = 0; lidx < num_lanes; lidx++) {
+                state[lidx].clear();
+                a.id = 0;
+                a.v = fix16_from_int(0);
+                a.p = fix16_from_int(10000);
+                a.lane = lidx;
+                state[lidx].push_back(a);
+              }
+ 
+              a.id = 0;
+              a.v = 0;
+              a.p = fix16_from_int(150);
+              a.lane = 0;
+ 
+              state[a.lane].push_back(a);
+ 
+              a.id = 0;
+              a.v = 0;
+              a.p = fix16_from_int(150);
+              a.lane = 2;
+ 
+              state[a.lane].push_back(a);
+ 
+              int next_id = 1;
+              for(int i = 0; i < 2; i++) {
+                a.id = next_id++;
+ 
+                a.v = v_step * factor_v[i];
+                a.p = fix16_from_int(150) - veh_length - obst_dist_factor[i] * p_step;
+ 
+                // a.lane = i * 2; // exploit symmetry
+                a.lane = lidx[i];
+ 
+                state[a.lane].push_back(a);
+              }
+ 
+              for(int lidx = 0; lidx < num_lanes; lidx++) {
+                sort(state[lidx].begin(), state[lidx].end());
+                reverse(state[lidx].begin(), state[lidx].end());
+              }
+ 
+              initial_state = state;
+ 
+              int final_ts;
+              bool r = simulate_forward(state, sensing_range, max_ts, final_ts, "", prune_for_case_study);
+ 
+              if(!r) {
+                if(final_ts == max_ts - 1) {
+                  int num_vehicles_in_relevant_area = 0;
+                  for(int aidx = 0; aidx < state[1].size(); aidx++) {
+                    if(!state[1][aidx].id)
+                      continue;
+                    if(state[1][aidx].p <= fix16_from_int(150) - veh_length &&
+                       state[1][aidx].p >= fix16_from_int(100)) {
+                      num_vehicles_in_relevant_area++;
+                    }
+                  }
+ 
+                  if(num_vehicles_in_relevant_area != 2)
+                    continue;
+ 
+                  dump_state(initial_state, "starting state");
+                  dump_state(state, "final state");
+ 
+                  num_accidents++;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  cerr << "parameter combinations: " << num_combinations - num_iterations_skipped << endl;
+  cerr << "states explored: " << num_states_explored_fw << endl;
+
+  return true;
+}
+
 
 bool run_rev_exploration_evaluation(fix16_t sensing_range, fix16_t p_step, fix16_t v_step, int num_mobile_vehicles, int num_obstacles, int max_ts)
 {
@@ -710,6 +895,8 @@ int main(int argc, char **argv)
       r = run_rev_exploration_evaluation(sensing_range, v_step, p_step, num_mobile_vehicles, num_obstacles, max_ts);
     else if(mode == 3)
       r = run_case_study(sensing_range, v_step, p_step, num_mobile_vehicles, num_obstacles, max_ts);
+    else if(mode == 4)
+      r = run_case_study_forward(sensing_range, v_step, p_step, num_mobile_vehicles, num_obstacles, max_ts);
 
     if(r)
       successes++;
