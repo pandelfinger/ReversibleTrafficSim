@@ -24,8 +24,8 @@ public:
   int lane;
   fix16_t v, p;
 
-  BitVector *garbage_bits_cf;
-  BitVector *garbage_bits_lc;
+  BitVector *garbage_bits_cf = NULL;
+  BitVector *garbage_bits_lc = NULL;
 
   void init_garbage_bits()
   {
